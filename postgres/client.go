@@ -3,11 +3,12 @@ package postgres
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/brewery-grpc"
+	"github.com/antschmidt/brewery-backend"
 	_ "github.com/lib/pq"
 )
 
@@ -17,6 +18,13 @@ type Client struct {
 	membershipService  MembershipService
 	transactionService TransactionService
 	db                 *sql.DB
+}
+
+type AutoComplete struct {
+	ID           string
+	MemberNumber int
+	MembershipID int
+	Value        string
 }
 
 func NewClient() *Client {
@@ -70,6 +78,40 @@ func (c *Client) AllJson() ([]byte, error) {
 	jsonblob.Write(tmpblob)
 	jsonblob.Write([]byte("]"))
 	return jsonblob.Bytes(), nil
+}
+
+func (c *Client) AutoComplete() ([]AutoComplete, error) {
+	var acs []AutoComplete
+	err := c.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer c.db.Close()
+	query := "select ms.id,m.membernumber,ms.memstat_id,ms.membership,m.names from member_status ms left join  members m on ms.id = m.id where ms.active=true order by m.membernumber;"
+	rows, err := c.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var ac AutoComplete
+		var namesb []byte
+		var names []map[string]string
+		var typeb []byte
+		err = rows.Scan(&ac.ID, &ac.MemberNumber, &ac.MembershipID, &typeb, &namesb)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(namesb, &names)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range names {
+			ac.Value = fmt.Sprintf("%v %v %v - %v", ac.MemberNumber, n["firstname"], n["lastname"], string(typeb))
+			acs = append(acs, ac)
+		}
+
+	}
+	return acs, nil
 }
 
 func (c *Client) TransactionService() brewery.TransactionStorage { return &c.transactionService }

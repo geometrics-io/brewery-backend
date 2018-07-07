@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 
-	"github.com/brewery-grpc/postgres"
+	"github.com/antschmidt/brewery-backend/postgres"
 )
 
 func main() {
@@ -20,10 +22,25 @@ func main() {
 	// if err != nil {
 	// 	log.Println(err)
 	// }
-	jsonblob, err := transclient.AllJson()
+	// jsonblob, err := transclient.AllJson()
+	// if err != nil {
+	// 	fmt.Println("Fuck")
+	// }
+	// fmt.Println(string(jsonblob))
+	ac, err := transclient.AutoComplete()
 	if err != nil {
-		fmt.Println("Fuck")
+		fmt.Println("Fuckin' AC")
 	}
-	fmt.Println(string(jsonblob))
+
+	acbs, err := json.Marshal(ac)
+	fmt.Println(string(acbs))
+	tclient := transclient.TransactionService()
+	transactions, err := tclient.TransactionsBytes(28)
+	if err != nil {
+		log.Println("F-ing Transactions", err)
+	}
+	//ts, err := json.Marshal(transacitons)
+
+	fmt.Println(string(transactions))
 	//fmt.Println(member.Number)
 }

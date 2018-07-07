@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package brewery_pb;
+
+import "google/api/annotations.proto";
+
+service BreweryService {
+    rpc AutoCompleteRequest(Empty) returns (AutoCompleteData) {
+        option (google.api.http) = {
+            get: "/v1/brewery/ac",
+        };
+    };
+
+    rpc NewMember(NewMemberData) returns (AutoComplete) {
+        option (google.api.http) = {
+            post: "/v1/brewery/newMember",
+            body: "member",
+        };
+    };
+
+    rpc MemberByID(MemberID) returns (Member) {
+        option (google.api.http) = {
+            post: "/v1/brewery/{MemberID}",
+        };
+    };
+
+    rpc MembershipsByID(MemberID) returns (Memberships) {
+        option (google.api.http) = {
+            post: "/v1/brewery/memberships/{MemberID}",
+        };
+    };
+
+    rpc TransactionsByID(MembershipID) returns (Transactions) {
+        option (google.api.http) = {
+            post: "/v1/brewery/{MembershipID}",
+        };
+    };
+
+    // rpc StoreTransaction(StoreTransactionRequest) returns (Transactions) {
+    //     option (google.api.http) = {
+    //         post: "/v1/brewery/{MembershipID}",
+    //         body: "Transaction",
+    //     };
+    // };
+    
+    // rpc DeleteTransaction(StoreTransactionRequest) returns (Transactions) {
+    //     option (google.api.http) = {
+    //         post: "/v1/brewery/{MembershipID}",
+    //         body: "Transaction"
+    //     };
+    // };
+}
+
+message Empty {}
+
+message AutoCompleteData {
+    repeated AutoComplete Data = 1;
+}
+
+message AutoComplete {
+    int32 Membernumber = 1;
+    int32 MembershipID = 2;
+    bytes AutoComplete = 3;
+}
+
+message Contact {
+    bytes Contact = 1;
+}
+
+message MembershipID {
+    int32 MembershipID = 1;
+}
+
+message MemberID {
+    string MemberID = 1;
+}
+
+message Transaction {
+    string Timestamp = 1;
+    double RawUnits = 2;
+}
+
+message Transactions {
+    repeated Transaction Transactions = 1;
+}
+
+message StoreTransactionRequest {
+    int32 MembershipID = 1;
+    Transaction Transaction = 2;
+}
+
+message CurrentTransaction {
+    string Timestamp = 1;
+    double RawUnits = 2;
+    string Id = 3;
+    int32 MemstatId = 4;
+}
+
+message MembershipLevel {
+    string Name = 1;
+    string UnitType = 2;
+    double Units = 3;
+    double Base = 4;
+}
+
+message Membership {
+    int32 MembershipID = 1;
+    string Type = 2;
+    string StartDate = 3;
+    double TotalRawUnits = 4;
+    int32 UnitBase = 5;
+    bool Active = 6;
+    Transactions Transactions = 7;
+}
+
+message Memberships {
+    repeated Membership memberships = 1;
+}
+
+message NewMemberData {
+    Member member = 1;
+}
+
+message Member {
+    string Id = 1;
+    int32 Membernumber = 2;
+    bytes Names = 3;
+    Contact Contact = 4;
+    repeated Membership Memberships = 5;
+}

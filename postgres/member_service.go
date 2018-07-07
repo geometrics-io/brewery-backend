@@ -3,7 +3,7 @@ package postgres
 import (
 	"log"
 
-	brewery "github.com/brewery-grpc"
+	brewery "github.com/antschmidt/brewery-backend"
 )
 
 type MemberService struct {

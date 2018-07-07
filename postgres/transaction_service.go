@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	brewery "github.com/brewery-grpc"
+	brewery "github.com/antschmidt/brewery-backend"
 )
 
 type TransactionService struct {
