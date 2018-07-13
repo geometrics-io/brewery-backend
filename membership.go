@@ -30,6 +30,7 @@ type Transaction struct {
 type TransactionStorage interface {
 	Add(id int, units float64) (*Transaction, error)
 	Remove(t *Transaction) error
+	Update(t *Transaction) error
 	Transactions(id int) ([]Transaction, error)
 	TransactionsBytes(id int) ([]byte, error)
 }

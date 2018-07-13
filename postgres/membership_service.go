@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	brewery "github.com/brewery-grpc"
+	brewery "github.com/antschmidt/brewery-backend"
 )
 
 type MembershipService struct {
@@ -82,6 +82,9 @@ func (mss *MembershipService) Memberships() ([]*brewery.Membership, error) {
 	defer mss.client.db.Close()
 	query := "SELECT memstat_id,start_date,membership,total_raw_units,active FROM member_status;"
 	rows, err := mss.client.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
 	for rows.Next() {
 		var membership brewery.Membership
 		err = rows.Scan(&membership.ID, &membership.StartDate, &membership.Type, &membership.TotalRawUnits, &membership.Active)

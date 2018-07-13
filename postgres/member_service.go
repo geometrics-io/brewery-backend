@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"fmt"
 	"log"
 
 	brewery "github.com/antschmidt/brewery-backend"
@@ -11,7 +12,7 @@ type MemberService struct {
 }
 
 // MemberByID pulls a members basic data with the member's id string
-func (ms *MemberService) MemberByID(id string) (*brewery.Member, error) {
+func (ms *MemberService) MemberByID(id string) (brewery.Member, error) {
 	var member brewery.Member
 	err := ms.client.Open()
 	if err != nil {
@@ -22,9 +23,26 @@ func (ms *MemberService) MemberByID(id string) (*brewery.Member, error) {
 	query := "select members.id,members.membernumber,members.names,contact.contact from members left join contact on contact.id = members.id where members.id=$1;"
 	err = ms.client.db.QueryRow(query, id).Scan(&member.Id, &member.Number, &member.Names, &member.Contact)
 	if err != nil {
-		return nil, err
+		return member, err
 	}
-	return &member, nil
+	fmt.Println(member)
+	return member, nil
+}
+
+func (ms *MemberService) MemberByNumber(n int) (brewery.Member, error) {
+	var member brewery.Member
+	err := ms.client.Open()
+	if err != nil {
+		//fix this to handle this error with some sort of message concerning database connectivity and who to contact
+		log.Fatal(err)
+	}
+	defer ms.client.db.Close()
+	query := "select members.id,members.membernumber,members.names,contact.contact from members left join contact on contact.id = members.id where members.membernumber=$1;"
+	err = ms.client.db.QueryRow(query, n).Scan(&member.Id, &member.Number, &member.Names, &member.Contact)
+	if err != nil {
+		return member, err
+	}
+	return member, nil
 }
 
 // Add Adds a

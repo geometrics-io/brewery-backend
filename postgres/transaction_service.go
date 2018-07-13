@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/lib/pq"
+
 	brewery "github.com/antschmidt/brewery-backend"
 )
 
@@ -18,7 +20,7 @@ func (ts *TransactionService) Add(id int, units float64) (*brewery.Transaction, 
 		return nil, err
 	}
 	defer ts.client.db.Close()
-	query := "INSERT INTO transactions (memstat_id, raw_units) VALUES ($1, $2) returning timestamp;"
+	query := "INSERT INTO member_transactions (memstat_id, raw_units) VALUES ($1, $2) returning timestamp;"
 	err = ts.client.db.QueryRow(query, id, units).Scan(&transaction.Timestamp)
 	if err != nil {
 		log.Printf("Failed to insert transaction or grab the timestamp from said transaction from\nID: %v\nRawUnits: %v\n", id, units)
@@ -37,7 +39,22 @@ func (ts *TransactionService) Remove(t *brewery.Transaction) error {
 	}
 	defer ts.client.db.Close()
 	query := "DELETE FROM member_transactions where memstat_id=$1 and timestamp=$2 and raw_units=$3;"
-	_, err = ts.client.db.Exec(query, t.ID, t.Timestamp, t.RawUnits)
+	res, err := ts.client.db.Exec(query, t.ID, pq.FormatTimestamp(t.Timestamp), t.RawUnits)
+	if err != nil {
+		return err
+	}
+	fmt.Println(res)
+	return nil
+}
+
+func (ts *TransactionService) Update(t *brewery.Transaction) error {
+	err := ts.client.Open()
+	if err != nil {
+		return err
+	}
+	defer ts.client.db.Close()
+	query := "update member_transactions set raw_units=$1 where memstat_id=$2 and timestamp=$3;"
+	_, err = ts.client.db.Exec(query, t.RawUnits, t.ID, t.Timestamp)
 	if err != nil {
 		return err
 	}
