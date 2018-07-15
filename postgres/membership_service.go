@@ -8,18 +8,19 @@ type MembershipService struct {
 	client *Client
 }
 
-func (mss *MembershipService) Add(m *brewery.Membership) error {
+func (mss *MembershipService) Add(id string, m *brewery.Membership) (int, error) {
 	err := mss.client.Open()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer mss.client.db.Close()
-	query := "INSERT INTO member_status (id,start_date,membership,total_raw_units) VALUES ($1, $2, $3, $4);"
-	_, err = mss.client.db.Exec(query, m.ID, m.StartDate, m.Type, m.TotalRawUnits)
+	query := "INSERT INTO member_status (id,start_date,membership,total_raw_units) VALUES ($1, $2, $3, $4) RETURNING memstat_id;"
+	var MemstatID int
+	err = mss.client.db.QueryRow(query, id, m.StartDate, m.Type, m.TotalRawUnits).Scan(&MemstatID)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return MemstatID, nil
 }
 
 func (mss *MembershipService) Remove(m *brewery.Membership) error {

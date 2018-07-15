@@ -37,7 +37,7 @@ type TransactionStorage interface {
 
 // MembershipStorage is for communicating with a form of storage to retain a member's membership data
 type MembershipStorage interface {
-	Add(m *Membership) error
+	Add(id string, m *Membership) (int, error)
 	Remove(m *Membership) error
 	Update(id int, m Membership) error
 	MembershipsByID(id string) ([]*Membership, error)

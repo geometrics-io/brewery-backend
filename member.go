@@ -15,7 +15,7 @@ type Contact struct {
 type MemberStorage interface {
 	MemberByID(id string) (Member, error)
 	MemberByNumber(n int) (Member, error)
-	Add(m *Member) error
+	Add(m *Member) (string, error)
 	RemoveByID(m string) error
 	Update(m *Member) error
 }

@@ -46,7 +46,7 @@ func (ms *MemberService) MemberByNumber(n int) (brewery.Member, error) {
 }
 
 // Add Adds a
-func (ms *MemberService) Add(m *brewery.Member) error {
+func (ms *MemberService) Add(m *brewery.Member) (string, error) {
 	err := ms.client.Open()
 	if err != nil {
 		//fix this to handle this error with some sort of message concerning database connectivity and who to contact
@@ -56,14 +56,15 @@ func (ms *MemberService) Add(m *brewery.Member) error {
 	query := "INSERT INTO members (membernumber,names) values ($1, $2) returning id;"
 	err = ms.client.db.QueryRow(query, m.Number, m.Names).Scan(&m.Id)
 	if err != nil {
-		return err
+		return "", err
 	}
+	fmt.Println("Contact info is: ", string(m.Contact))
 	query = "INSERT INTO contact (id, contact) values ($1, $2);"
-	_, err = ms.client.db.Exec(query, m.Id, m.Contact)
+	_, err = ms.client.db.Exec(query, m.Id, string(m.Contact))
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return m.Id, nil
 }
 
 func (ms *MemberService) RemoveByID(id string) error {

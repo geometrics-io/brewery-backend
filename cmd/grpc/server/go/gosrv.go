@@ -88,6 +88,9 @@ func (s *server) AutoCompleteRequest(ctx context.Context, empty *pb.Empty) (*pb.
 
 func (s *server) MemberService(ctx context.Context, m *pb.MemberRequest) (*pb.MemberResponse, error) {
 	var mr pb.MemberResponse
+	fmt.Println(m.Action)
+	fmt.Println("Now going to try to print the m.Member")
+	fmt.Printf("===============\n %v \n ====================", m.Member)
 	switch m.Action {
 	case 0:
 		return nil, fmt.Errorf("This type of member query is not yet implemented")
@@ -96,19 +99,46 @@ func (s *server) MemberService(ctx context.Context, m *pb.MemberRequest) (*pb.Me
 		db := pg.NewClient()
 		err := db.Open()
 		if err != nil {
-			return nil, err
+			mr.Status = 2
+			return &mr, err
 		}
-		member := protoToBreweryMember(m.MemberData.Member)
-
+		member := protoToBreweryMember(*m.Member)
 		ms := db.MemberService()
-		err = ms.Add(member)
-		if err != nil {
-			return nil, err
-		}
+		mss := db.MembershipService()
+		ts := db.TransactionService()
+		id, err := ms.Add(member)
+		fmt.Println("New Member ID is: ", id)
+		var newms brewery.Membership
 
+		newms.StartDate, err = time.Parse("2006-01-02 15:04:05 +0000 +0000", m.Member.Memberships[0].StartDate)
+		if err != nil {
+			mr.Status = 2
+			err = ms.RemoveByID(id)
+			if err != nil {
+				return &mr, fmt.Errorf("I couldn't understand that date and I was unable to remove the incomplete member with id: %v\nwith error: %v", id, err)
+			}
+			return &mr, fmt.Errorf("I couldn't understand that date, please try again")
+		}
+		newms.TotalRawUnits = m.Member.Memberships[0].TotalRawUnits
+		newms.Type = m.Member.Memberships[0].Type
+		msid, err := mss.Add(id, &newms)
+		if err != nil {
+			mr.Status = 2
+			return &mr, fmt.Errorf("The Member was added successfully though the Membership was not, this will likely cause other problems. Contact Tony at tony@geometrics.io and alerts@geometrics.io\nError: %v", err)
+		}
+		_, err = ts.Add(msid, 0)
+		if err != nil {
+			mr.Status = 2
+			return &mr, fmt.Errorf("The member data and membership were logged but there was a problem with the initial dummy transaction which is necessary for some reason please contact tony@geometrics.io and alerts@geometrics.io (if the system is no longer up)\nerror: %v\nid: %v", err, id)
+		}
 		acs, err := db.AutoComplete()
 		if err != nil {
-			return nil, err
+			mr.Status = 0
+			return &mr, fmt.Errorf("The member was added successfully though the Autocomplete data was not updated, please refresh the page\nerror: %v", err)
+		}
+		mr.Member, err = s.MemberByID(ctx, &pb.MemberID{MemberID: id})
+		if err != nil {
+			log.Println(err)
 		}
 
 		mr.AutoComplete = breweryToProtoAC(acs).Data
@@ -139,17 +169,28 @@ func breweryToProtoAC(acs []pg.AutoComplete) *pb.AutoCompleteData {
 	return &pbac
 }
 
-func protoToBreweryMember(m *pb.Member) *brewery.Member {
+func protoToBreweryMember(pm pb.Member) *brewery.Member {
 	var member brewery.Member
-	member.Id = m.Id
-	member.Names = protoNamesToByte(m.Names)
-	member.Number = int(m.Membernumber)
-	member.Contact = protoContactToBytes(m.Contact)
+	fmt.Println("I made it into the protoToBreweryMember now going to try to print the &pm")
+	fmt.Println("The Member to be added is \n", pm)
+	fmt.Println("The m.Id is: ", pm.Id)
+	member.Number = int(pm.Membernumber)
+	member.Id = pm.Id
+	member.Names = protoNamesToByte(pm.Names)
+	member.Number = int(pm.Membernumber)
+	member.Contact = protoContactToBytes(pm.Contact)
 	return &member
 }
 
 func protoNamesToByte(pnames []*pb.Name) []byte {
-	bytes, err := json.Marshal(pnames)
+	var names []map[string]string
+	for _, n := range pnames {
+		name := make(map[string]string)
+		name["firstname"] = n.First
+		name["lastname"] = n.Last
+		names = append(names, name)
+	}
+	bytes, err := json.Marshal(names)
 	if err != nil {
 		return []byte{}
 	}
@@ -183,7 +224,7 @@ func bytesToProtoContact(b []byte) pb.Contact {
 
 	err := json.Unmarshal(b, &contact)
 	if err != nil {
-		log.Printf("Something went wrong with the contact info: %v\n\n But let's keep the beer flowing")
+		log.Printf("Something went wrong with the contact info: %v\n\n But let's keep the beer flowing", err)
 		return protoContact
 	}
 
@@ -198,25 +239,29 @@ func bytesToProtoContact(b []byte) pb.Contact {
 }
 
 func protoContactToBytes(pc *pb.Contact) []byte {
-	var contact struct {
-		zip    string
-		city   string
-		email  string
-		phone  string
-		state  string
-		street string
-	}
-	contact.city = pc.City
-	contact.zip = pc.Zip
-	contact.email = pc.Email
-	contact.phone = pc.Phone
-	contact.state = pc.State
-	contact.street = pc.Street
-	contactBytes, err := json.Marshal(contact)
+	// fmt.Println("The proto contact data coming into the protoC2B is: ", pc)
+	// var contact struct {
+	// 	zip    string
+	// 	city   string
+	// 	email  string
+	// 	phone  string
+	// 	state  string
+	// 	street string
+	// }
+	// var contact map[string]string
+	// contact.city = pc.City
+	// contact.zip = pc.Zip
+	// contact.email = pc.Email
+	// contact.phone = pc.Phone
+	// contact.state = pc.State
+	// contact.street = pc.Street
+	// fmt.Println("Struct to be marshalled into a byte slice is: ", contact)
+	contactBytes, err := json.Marshal(pc)
 	if err != nil {
 		log.Println("Something went wrong with the contact marshaling, oh well, here's blank contact info.. keep the beer flowing!")
 		return []byte("{\"zip\": \" \", \"city\": \" \", \"email\": \" \", \"phone\": \" \", \"state\": \" \", \"street\": \" \"}")
 	}
+	fmt.Println("Contact bytes to string within protoContactToBytes is: ", string(contactBytes))
 	return contactBytes
 }
 
@@ -467,3 +512,5 @@ func (s *server) MembershipsByID(ctx context.Context, id *pb.MemberID) (*pb.Memb
 	}
 	return &pMemberships, nil
 }
+
+//curl -d '{"Action": 1, "MemberData":{"Id":"","Names":[{"First":"The TESTY","Last":"McTester"},{"First":"Testi","Last":"McTester"}],"Contact":{"zip":"62606","city":"BLUBADUB","email":"blubaduber@gmail.com","phone":"111-111-1111","state":"Conscious","street":"1820 For Now"},"Memberships":[{"MembershipID":0,"Type":"social","StartDate":"2018-07-13 00:00:00 +0000 +0000","TotalRawUnits":50,"Active":true}]}}' -H "Content-Type: application/json" -X POST https://grpctestdev.theschmidt.house/v1/brewery/member

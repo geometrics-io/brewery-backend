@@ -13,7 +13,7 @@ service BreweryService {
 
     rpc MemberService(MemberRequest) returns (MemberResponse) {
         option (google.api.http) = {
-            post: "/v1/brewery/member",
+            post: "/v1/brewery/service/member",
             body: "*",
         };
     };
@@ -30,9 +30,35 @@ service BreweryService {
         };
     };
 
+    rpc MembershipTypeService(MembershipTypeRequest) returns (MembershipTypeResponse) {
+        option (google.api.http) = {
+            post: "/v1/brewery/service/types",
+            body: "*",
+        };
+    };
+
+    rpc AvailableMembershipTypes(Empty) returns (MembershipTypeResponse) {
+        option (google.api.http) = {
+            get: "/v1/brewery/types",
+        };
+    };
+
+    rpc MembershipService(MembershipRequest) returns (MembershipResponse) {
+        option (google.api.http) = {
+            post: "/v1/brewery/membership",
+            body: "*",
+        };
+    };
+
     rpc MembershipsByID(MemberID) returns (Memberships) {
         option (google.api.http) = {
             get: "/v1/brewery/memberships/{MemberID}",
+        };
+    };
+
+    rpc PullMonthlyReport(Empty) returns (MonthliesReportResponse) {
+        option (google.api.http) = {
+            get: "/v1/brewery/monthlies"
         };
     };
 
@@ -44,7 +70,7 @@ service BreweryService {
 
     rpc StoreTransaction(TransactionRequest) returns (TransactionResponse) {
         option (google.api.http) = {
-            post: "/v1/brewery/transaction/{MembershipID}",
+            post: "/v1/brewery/edit/transaction/{MembershipID}",
             body: "*",
         };
     };
@@ -75,6 +101,19 @@ message AutoComplete {
     string AutoComplete = 3;
 }
 
+message MemberID {
+    string MemberID = 1;
+}
+
+message Membernumber {
+    int32 Membernumber = 1;
+}
+
+message Name {
+    string First = 1;
+    string Last = 2;
+}
+
 message Contact {
     string zip = 1;
     string city = 2;
@@ -84,16 +123,76 @@ message Contact {
     string street = 6;
 }
 
+message Member {
+    string Id = 1;
+    int32 Membernumber = 2;
+    repeated Name Names = 3;
+    Contact Contact = 4;
+    repeated Membership Memberships = 5;
+}
+
+message MemberRequest {
+    Action Action = 1;
+    Member Member = 2;
+}
+
+message MemberResponse {
+    Status Status = 1;
+    repeated AutoComplete AutoComplete = 2;
+    Member Member = 3;
+}
+
+message MembershipType {
+    string Name = 1;
+    string UnitType = 2;
+    double units = 3;
+    int32 UnitBase = 4;
+}
+
+message MembershipTypeRequest {
+    Action Action = 1;
+    MembershipType Parameters = 2;
+}
+
+message MembershipTypeResponse {
+    Status Status = 1;
+    repeated MembershipType Types = 2;
+}
+
+message MembershipLevel {
+    string Name = 1;
+    string UnitType = 2;
+    double Units = 3;
+    double Base = 4;
+}
+
 message MembershipID {
     int32 MembershipID = 1;
 }
 
-message MemberID {
-    string MemberID = 1;
+message Membership {
+    int32 MembershipID = 1;
+    string Type = 2;
+    string StartDate = 3;
+    double TotalRawUnits = 4;
+    int32 UnitBase = 5;
+    bool Active = 6;
+    repeated Transaction Transactions = 7;
 }
 
-message Membernumber {
-    int32 Membernumber = 1;
+message Memberships {
+    repeated Membership memberships = 1;
+}
+
+message MembershipRequest {
+    Action Action = 1;
+    MemberID MemberID = 2;
+    Membership Membership = 3;
+}
+
+message MembershipResponse {
+    Status Status = 1;
+    Membership Membership = 2;
 }
 
 message Transaction {
@@ -123,51 +222,24 @@ message CurrentTransaction {
     int32 MemstatId = 4;
 }
 
-message MembershipLevel {
-    string Name = 1;
-    string UnitType = 2;
-    double Units = 3;
-    double Base = 4;
-}
-
-message Membership {
-    int32 MembershipID = 1;
-    string Type = 2;
-    string StartDate = 3;
-    double TotalRawUnits = 4;
-    int32 UnitBase = 5;
-    bool Active = 6;
-    repeated Transaction Transactions = 7;
-}
-
-message Memberships {
-    repeated Membership memberships = 1;
-}
-
-message MemberRequest {
-    Action Action = 1;
-    MemberData MemberData = 2;
-}
-
-message MemberResponse {
+message MonthliesReportResponse {
     Status Status = 1;
-    repeated AutoComplete AutoComplete = 2;
-    Member Member = 3;
-}
-message MemberData {
-    Member member = 1;
-    Action Action = 2;
+    repeated MonthlyReport MonthlyReports= 2;
 }
 
-message Name {
-    string First = 1;
-    string Last = 2;
-}
-
-message Member {
-    string Id = 1;
-    int32 Membernumber = 2;
-    repeated Name Names = 3;
-    Contact Contact = 4;
-    repeated Membership Memberships = 5;
+message MonthlyReport {
+    int32 Year = 1;
+    string Type = 2;
+    double Jan = 3;
+    double Feb = 4;
+    double Mar = 5;
+    double Apr = 6;
+    double May = 7;
+    double Jun = 8;
+    double Jul = 9;
+    double Aug = 10;
+    double Sep = 11;
+    double Oct = 12;
+    double Nov = 13;
+    double Dec = 14;
 }
