@@ -9,10 +9,12 @@ import (
 	brewery "github.com/antschmidt/brewery-backend"
 )
 
+// TransactionService implements the brewery.TransactionStorage interface
 type TransactionService struct {
 	client *Client
 }
 
+// Add creates a transaction in the database for the provided membership with the given units and returns the transaction data with the timestamp
 func (ts *TransactionService) Add(id int, units float64) (*brewery.Transaction, error) {
 	var transaction brewery.Transaction
 	err := ts.client.Open()
@@ -32,6 +34,7 @@ func (ts *TransactionService) Add(id int, units float64) (*brewery.Transaction, 
 
 }
 
+// Remove deletes a given transaction from the database
 func (ts *TransactionService) Remove(t *brewery.Transaction) error {
 	err := ts.client.Open()
 	if err != nil {
@@ -47,6 +50,7 @@ func (ts *TransactionService) Remove(t *brewery.Transaction) error {
 	return nil
 }
 
+// Update allows you to alter the units of particular transaction in the database when given the id and timestamp of an existing transaction
 func (ts *TransactionService) Update(t *brewery.Transaction) error {
 	err := ts.client.Open()
 	if err != nil {
@@ -61,6 +65,7 @@ func (ts *TransactionService) Update(t *brewery.Transaction) error {
 	return nil
 }
 
+// Transactions returns the transactions for the membership of the privided membership id
 func (ts *TransactionService) Transactions(id int) ([]brewery.Transaction, error) {
 	var transactions []brewery.Transaction
 	err := ts.client.Open()
@@ -88,6 +93,7 @@ func (ts *TransactionService) Transactions(id int) ([]brewery.Transaction, error
 	return transactions, nil
 }
 
+// TransactionBytes returns teh transactions of the membership connected to the given id and returns the transaction data as a slice of byte
 func (ts *TransactionService) TransactionsBytes(id int) ([]byte, error) {
 	var tt []byte
 	err := ts.client.Open()

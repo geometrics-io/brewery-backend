@@ -8,6 +8,7 @@ type MembershipLevelService struct {
 	client *Client
 }
 
+// Add returns the available membership levels after adding the provided one to the database
 func (mls *MembershipLevelService) Add(ml brewery.MembershipLevel) ([]*brewery.MembershipLevel, error) {
 	err := mls.client.Open()
 	if err != nil {
@@ -25,6 +26,7 @@ func (mls *MembershipLevelService) Add(ml brewery.MembershipLevel) ([]*brewery.M
 	return mls.MembershipLevels()
 }
 
+// Remove returns remaining available membership levels after removing one from the database
 func (mls *MembershipLevelService) Remove(ml brewery.MembershipLevel) ([]*brewery.MembershipLevel, error) {
 	err := mls.client.Open()
 	if err != nil {
@@ -40,6 +42,7 @@ func (mls *MembershipLevelService) Remove(ml brewery.MembershipLevel) ([]*brewer
 	return mls.MembershipLevels()
 }
 
+// Update returns a membership level after updating it in the database
 func (mls *MembershipLevelService) Update(name string, ml brewery.MembershipLevel) (*brewery.MembershipLevel, error) {
 	err := mls.client.Open()
 	if err != nil {
@@ -56,6 +59,7 @@ func (mls *MembershipLevelService) Update(name string, ml brewery.MembershipLeve
 	return mls.MembershipLevel(ml.Name)
 }
 
+// MembershipLevels returns an array of the available membership levels
 func (mls *MembershipLevelService) MembershipLevels() ([]*brewery.MembershipLevel, error) {
 	err := mls.client.Open()
 	if err != nil {
@@ -81,6 +85,7 @@ func (mls *MembershipLevelService) MembershipLevels() ([]*brewery.MembershipLeve
 	return levels, nil
 }
 
+// MembershipLevel returns the membership level data for the provided name
 func (mls *MembershipLevelService) MembershipLevel(n string) (*brewery.MembershipLevel, error) {
 	err := mls.client.Open()
 	if err != nil {

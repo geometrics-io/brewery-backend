@@ -4,10 +4,12 @@ import (
 	brewery "github.com/antschmidt/brewery-backend"
 )
 
+// MembershipService implements the brewery.MembershipStorage interface
 type MembershipService struct {
 	client *Client
 }
 
+// Add creates a new membership based on the member_id and membership data provided
 func (mss *MembershipService) Add(id string, m *brewery.Membership) (int, error) {
 	err := mss.client.Open()
 	if err != nil {
@@ -23,6 +25,7 @@ func (mss *MembershipService) Add(id string, m *brewery.Membership) (int, error)
 	return MemstatID, nil
 }
 
+// Remove deletes a single specified membership from the database
 func (mss *MembershipService) Remove(m *brewery.Membership) error {
 	err := mss.client.Open()
 	if err != nil {
@@ -37,6 +40,7 @@ func (mss *MembershipService) Remove(m *brewery.Membership) error {
 	return nil
 }
 
+// Update alters a membership's entry in the database with the data provided
 func (mss *MembershipService) Update(id int, m brewery.Membership) error {
 	err := mss.client.Open()
 	if err != nil {
@@ -51,6 +55,7 @@ func (mss *MembershipService) Update(id int, m brewery.Membership) error {
 	return nil
 }
 
+// MembershipsByID returns the memberships held by a particular member with the given ID
 func (mss *MembershipService) MembershipsByID(id string) ([]*brewery.Membership, error) {
 	var memberships []*brewery.Membership
 	err := mss.client.Open()
@@ -74,6 +79,8 @@ func (mss *MembershipService) MembershipsByID(id string) ([]*brewery.Membership,
 	return memberships, nil
 }
 
+// Memberships returns all memberships held in the connected database
+// (I'm not sure why I created this, perhaps it should be membership by membernumber...)
 func (mss *MembershipService) Memberships() ([]*brewery.Membership, error) {
 	var memberships []*brewery.Membership
 	err := mss.client.Open()
@@ -96,9 +103,3 @@ func (mss *MembershipService) Memberships() ([]*brewery.Membership, error) {
 	}
 	return memberships, nil
 }
-
-// 	Add(m *Membership) error
-//	Remove(m *Membership) error
-//	Update(id int, m Membership) error
-//	MembershipsByID(id int) []*Membership
-//	Memberships() []*Membership

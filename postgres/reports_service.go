@@ -6,10 +6,12 @@ import (
 	brewery "github.com/antschmidt/brewery-backend"
 )
 
+// ReportsService implements the brewery.ReportsStorage interface
 type ReportsService struct {
 	client *Client
 }
 
+// Monthlies returns the monthly reports
 func (rs *ReportsService) Monthlies() ([]*brewery.MonthlyReport, error) {
 	err := rs.client.Open()
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	brewery "github.com/antschmidt/brewery-backend"
 )
 
+// MemberService contains the client which implements the brewery.MemberStorage interface
 type MemberService struct {
 	client *Client
 }
@@ -29,6 +30,7 @@ func (ms *MemberService) MemberByID(id string) (brewery.Member, error) {
 	return member, nil
 }
 
+// MemberByNumber returns the member to which the provided member number belongs.
 func (ms *MemberService) MemberByNumber(n int) (brewery.Member, error) {
 	var member brewery.Member
 	err := ms.client.Open()
@@ -45,7 +47,7 @@ func (ms *MemberService) MemberByNumber(n int) (brewery.Member, error) {
 	return member, nil
 }
 
-// Add Adds a
+// Add returns a MemberID after inserting a member into the database
 func (ms *MemberService) Add(m *brewery.Member) (string, error) {
 	err := ms.client.Open()
 	if err != nil {
@@ -67,6 +69,7 @@ func (ms *MemberService) Add(m *brewery.Member) (string, error) {
 	return m.Id, nil
 }
 
+// RemoveByID removes a member and all releated data of that member from the database
 func (ms *MemberService) RemoveByID(id string) error {
 	err := ms.client.Open()
 	if err != nil {
@@ -89,6 +92,7 @@ func (ms *MemberService) RemoveByID(id string) error {
 	return nil
 }
 
+// Update will update the database entry of the member provided
 func (ms *MemberService) Update(m *brewery.Member) error {
 	err := ms.client.Open()
 	if err != nil {
