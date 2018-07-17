@@ -157,6 +157,252 @@ func (s *server) MemberService(ctx context.Context, m *pb.MemberRequest) (*pb.Me
 	return &mr, fmt.Errorf("There seems to be no Action declared")
 }
 
+func (s *server) AvailableMembershipTypes(ctx context.Context, m *pb.Empty) (*pb.MembershipLevelResponse, error) {
+	var mtr pb.MembershipLevelResponse
+	db := pg.NewClient()
+	err := db.Open()
+	if err != nil {
+		mtr.Status = 2
+		return &mtr, fmt.Errorf("Unable to open the client db connection to pull available membership types: ", err)
+	}
+	mls := db.MembershipLevelService()
+	levels, err := mls.MembershipLevels()
+	if err != nil {
+		mtr.Status = 2
+		return &mtr, fmt.Errorf("Unable to acquire Available Membership Types: %v", err)
+	}
+	for _, l := range levels {
+		var pl pb.MembershipType
+		pl.Name = l.Name
+		pl.UnitType = l.UnitType
+		pl.Units = l.Units
+		pl.UnitBase = int32(l.UnitBase)
+		mtr.Types = append(mtr.Types, &pl)
+	}
+	mtr.Status = 1
+	return &mtr, nil
+}
+
+func (s *server) MembershipLevelService(ctx context.Context, req *pb.MembershipLevelRequest) (*pb.MembershipLevelResponse, error) {
+	var res pb.MembershipLevelResponse
+	db := pg.NewClient()
+	err := db.Open()
+	if err != nil {
+		res.Status = 2
+		return &res, fmt.Errorf("Unable to connect to data backend: %v", err)
+	}
+
+	mls := db.MembershipLevelService()
+
+	switch req.Action {
+
+	case 0:
+		var empty pb.Empty
+		return s.AvailableMembershipTypes(ctx, &empty)
+
+	case 1:
+		var empty pb.Empty
+		var level brewery.MembershipLevel
+		level.Name = req.Parameters.Name
+		level.UnitBase = int(req.Parameters.UnitBase)
+		level.Units = req.Parameters.Units
+		level.UnitType = req.Parameters.UnitType
+		_, err := mls.Add(level)
+		if err != nil {
+			res.Status = 2
+			return &res, fmt.Errorf("Unable to add new membership level: %v", err)
+		}
+		return s.AvailableMembershipTypes(ctx, &empty)
+	case 2:
+		var empty pb.Empty
+		var level brewery.MembershipLevel
+		level.Name = req.Parameters.Name
+		_, err := mls.Remove(level)
+		if err != nil {
+			res.Status = 2
+			return &res, fmt.Errorf("Unable to remove membership level: ", err)
+		}
+		return s.AvailableMembershipTypes(ctx, &empty)
+	case 3:
+		var empty pb.Empty
+		var level brewery.MembershipLevel
+		level.Name = req.Parameters.Name
+		level.UnitBase = int(req.Parameters.UnitBase)
+		level.Units = req.Parameters.Units
+		level.UnitType = req.Parameters.UnitType
+		_, err := mls.Update(req.Name, level)
+		if err != nil {
+			res.Status = 2
+			return &res, fmt.Errorf("Unable to update membership level: %v", err)
+		}
+		return s.AvailableMembershipTypes(ctx, &empty)
+	}
+	res.Status = 0
+	return &res, fmt.Errorf("Your action was likely out of scope: %v", err)
+
+}
+
+func (s *server) PullMonthlyReport(context.Context, *pb.Empty) (*pb.MonthliesReportResponse, error) {
+	var res pb.MonthliesReportResponse
+	db := pg.NewClient()
+	err := db.Open()
+	if err != nil {
+		res.Status = 2
+		return &res, err
+	}
+
+	rs := db.ReportsService()
+	report, err := rs.Monthlies()
+	for _, r := range report {
+		var pr pb.MonthlyReport
+		pr.Year = int32(r.Year)
+		pr.Type = r.Type
+		pr.Jan = r.Jan
+		pr.Feb = r.Feb
+		pr.Mar = r.Mar
+		pr.Apr = r.Apr
+		pr.May = r.May
+		pr.Jun = r.Jun
+		pr.Jul = r.Jul
+		pr.Aug = r.Aug
+		pr.Sep = r.Sep
+		pr.Oct = r.Oct
+		pr.Nov = r.Nov
+		pr.Dec = r.Dec
+		res.MonthlyReports = append(res.MonthlyReports, &pr)
+	}
+	res.Status = 1
+	return &res, nil
+}
+
+func (s *server) MembershipService(ctx context.Context, req *pb.MembershipRequest) (*pb.MembershipResponse, error) {
+	var res pb.MembershipResponse
+	db := pg.NewClient()
+	err := db.Open()
+	if err != nil {
+		res.Status = 2
+		return &res, err
+	}
+	mss := db.MembershipService()
+	ts := db.TransactionService()
+
+	switch req.Action {
+	case 0:
+		memberships, err := s.MembershipsByID(ctx, req.MemberID)
+		if err != nil {
+			res.Status = 2
+			return &res, err
+		}
+		res.Memberships = memberships.Memberships
+		res.Status = 1
+		return &res, err
+	case 1:
+		var membership brewery.Membership
+		membership.StartDate, err = time.Parse("2006-01-02 15:04:05 +0000 +0000", req.Membership.StartDate)
+		if err != nil {
+			membership.StartDate = time.Now()
+		}
+		membership.Type = req.Membership.Type
+		membership.TotalRawUnits = req.Membership.TotalRawUnits
+		newid, err := mss.Add(req.MemberID.MemberID, &membership)
+		if err != nil {
+			res.Status = 2
+			return &res, fmt.Errorf("Unable to add the membership: %v", err)
+		}
+
+		_, err = ts.Add(newid, 0.00)
+		if err != nil {
+			res.Status = 2
+			return &res, fmt.Errorf("Added Membership but not dummy transaction, this will likely cause other troubles. If it does contact Tony: %v", err)
+		}
+
+		memberships, err := s.MembershipsByID(ctx, req.MemberID)
+		if err != nil {
+			res.Status = 2
+			return &res, err
+		}
+		res.Memberships = memberships.Memberships
+		res.Status = 1
+		return &res, err
+
+	case 2:
+		mships, err := mss.MembershipsByID(req.MemberID.MemberID)
+		if err != nil {
+			res.Status = 2
+			return &res, fmt.Errorf("Unable to remove Memberships due to being unable to query memberships belonging to that ID: %v", err)
+		}
+		if len(mships) <= 1 {
+			res.Status = 2
+			return &res, fmt.Errorf("Unable to process your request. A member must have at least 1 membership. If you would like to delete the member please use that functiond: %v", err)
+		}
+
+		var membership brewery.Membership
+		membership.ID = int(req.Membership.MembershipID)
+
+		err = mss.Remove(&membership)
+		if err != nil {
+			res.Status = 2
+			fmt.Errorf("Unable to remove membership: %v", err)
+		}
+
+		memberships, err := s.MembershipsByID(ctx, req.MemberID)
+		if err != nil {
+			res.Status = 2
+			return &res, err
+		}
+
+		res.Memberships = memberships.Memberships
+		res.Status = 1
+		return &res, err
+
+	case 3:
+		var membership brewery.Membership
+
+		membership.ID = int(req.Membership.MembershipID)
+		membership.StartDate, err = time.Parse("2006-01-02 15:04:05 +0000 +0000", req.Membership.StartDate)
+		if err != nil {
+			res.Status = 2
+			return &res, fmt.Errorf("Unable to process start date: %v", err)
+		}
+		membership.TotalRawUnits = req.Membership.TotalRawUnits
+		membership.Type = req.Membership.Type
+		membership.Active = req.Membership.Active
+		err = mss.Update(int(req.Membership.MembershipID), membership)
+		if err != nil {
+			res.Status = 2
+			return &res, fmt.Errorf("Unable to update membership: %v", err)
+		}
+
+		memberships, err := s.MembershipsByID(ctx, req.MemberID)
+		if err != nil {
+			res.Status = 2
+			return &res, err
+		}
+
+		res.Memberships = memberships.Memberships
+		res.Status = 1
+		return &res, err
+
+	}
+
+	res.Status = 0
+	return &res, fmt.Errorf("Your action was likely out of scope, nothing was done: %v", err)
+}
+
+func breweryToProtoMemberships(ms []*brewery.Membership) []*pb.Membership {
+	var pms []*pb.Membership
+	for _, m := range ms {
+		var pm pb.Membership
+		pm.MembershipID = int32(m.ID)
+		pm.StartDate = m.StartDate.String()
+		pm.TotalRawUnits = m.TotalRawUnits
+		pm.Type = m.Type
+		pm.Active = m.Active
+		pms = append(pms, &pm)
+	}
+	return pms
+}
+
 func breweryToProtoAC(acs []pg.AutoComplete) *pb.AutoCompleteData {
 	var pbac pb.AutoCompleteData
 	for _, d := range acs {
@@ -482,17 +728,19 @@ func (s *server) TransactionsByID(ctx context.Context, id *pb.MembershipID) (*pb
 	return &pbt, nil
 }
 
-func (s *server) MembershipsByID(ctx context.Context, id *pb.MemberID) (*pb.Memberships, error) {
-	var pMemberships pb.Memberships
+func (s *server) MembershipsByID(ctx context.Context, id *pb.MemberID) (*pb.MembershipResponse, error) {
+	var res pb.MembershipResponse
 	db := pg.NewClient()
 	err := db.Open()
 	if err != nil {
-		return nil, err
+		res.Status = 2
+		return &res, err
 	}
 	mss := db.MembershipService()
 	memberships, err := mss.MembershipsByID(id.MemberID)
 	if err != nil {
-		return nil, err
+		res.Status = 2
+		return &res, err
 	}
 	ts := db.TransactionService()
 	for _, membership := range memberships {
@@ -508,9 +756,10 @@ func (s *server) MembershipsByID(ctx context.Context, id *pb.MemberID) (*pb.Memb
 			return nil, err
 		}
 		pMembership.Transactions = marshalTransactions(membershipTransactions)
-		pMemberships.Memberships = append(pMemberships.Memberships, &pMembership)
+		res.Memberships = append(res.Memberships, &pMembership)
 	}
-	return &pMemberships, nil
+	res.Status = 1
+	return &res, nil
 }
 
 //curl -d '{"Action": 1, "MemberData":{"Id":"","Names":[{"First":"The TESTY","Last":"McTester"},{"First":"Testi","Last":"McTester"}],"Contact":{"zip":"62606","city":"BLUBADUB","email":"blubaduber@gmail.com","phone":"111-111-1111","state":"Conscious","street":"1820 For Now"},"Memberships":[{"MembershipID":0,"Type":"social","StartDate":"2018-07-13 00:00:00 +0000 +0000","TotalRawUnits":50,"Active":true}]}}' -H "Content-Type: application/json" -X POST https://grpctestdev.theschmidt.house/v1/brewery/member

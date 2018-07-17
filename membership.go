@@ -46,9 +46,9 @@ type MembershipStorage interface {
 
 // MembershipLevelStorage is for communicating with a form of storage to retain Membership Levels
 type MembershipLevelStorage interface {
-	Add(ml MembershipLevel) bool
-	Remove(ml MembershipLevel) bool
-	Update(name string, ml MembershipLevel)
-	MembershipLevels() []MembershipLevel
-	MembershipLevel(n string) MembershipLevel
+	Add(ml MembershipLevel) ([]*MembershipLevel, error)
+	Remove(ml MembershipLevel) ([]*MembershipLevel, error)
+	Update(name string, ml MembershipLevel) (*MembershipLevel, error)
+	MembershipLevels() ([]*MembershipLevel, error)
+	MembershipLevel(n string) (*MembershipLevel, error)
 }

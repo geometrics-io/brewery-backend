@@ -12,7 +12,9 @@ type Brewery struct {
 type Client interface {
 	MemberService() MemberStorage
 	MembershipService() MembershipStorage
+	MembershipLevelService() MembershipLevelStorage
 	TransactionService() TransactionStorage
+	ReportsService() ReportsStorage
 }
 
 // statement grabs active memstat_id and transactions as json

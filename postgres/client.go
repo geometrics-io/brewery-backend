@@ -13,11 +13,13 @@ import (
 )
 
 type Client struct {
-	Now                func() time.Time
-	memberService      MemberService
-	membershipService  MembershipService
-	transactionService TransactionService
-	db                 *sql.DB
+	Now                    func() time.Time
+	memberService          MemberService
+	membershipService      MembershipService
+	membershipLevelService MembershipLevelService
+	transactionService     TransactionService
+	reportsService         ReportsService
+	db                     *sql.DB
 }
 
 type AutoComplete struct {
@@ -31,7 +33,9 @@ func NewClient() *Client {
 	c := &Client{Now: time.Now}
 	c.memberService.client = c
 	c.membershipService.client = c
+	c.membershipLevelService.client = c
 	c.transactionService.client = c
+	c.reportsService.client = c
 	return c
 }
 
@@ -117,6 +121,10 @@ func (c *Client) AutoComplete() ([]AutoComplete, error) {
 func (c *Client) TransactionService() brewery.TransactionStorage { return &c.transactionService }
 func (c *Client) MembershipService() brewery.MembershipStorage   { return &c.membershipService }
 func (c *Client) MemberService() brewery.MemberStorage           { return &c.memberService }
+func (c *Client) ReportsService() brewery.ReportsStorage         { return &c.reportsService }
+func (c *Client) MembershipLevelService() brewery.MembershipLevelStorage {
+	return &c.membershipLevelService
+}
 
 //func (c *Client) TransactionService() brewery.TransactionStorage { return &c.transactionService }
 

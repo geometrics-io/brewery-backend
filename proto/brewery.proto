@@ -30,14 +30,14 @@ service BreweryService {
         };
     };
 
-    rpc MembershipTypeService(MembershipTypeRequest) returns (MembershipTypeResponse) {
+    rpc MembershipLevelService(MembershipLevelRequest) returns (MembershipLevelResponse) {
         option (google.api.http) = {
             post: "/v1/brewery/service/types",
             body: "*",
         };
     };
 
-    rpc AvailableMembershipTypes(Empty) returns (MembershipTypeResponse) {
+    rpc AvailableMembershipTypes(Empty) returns (MembershipLevelResponse) {
         option (google.api.http) = {
             get: "/v1/brewery/types",
         };
@@ -50,7 +50,7 @@ service BreweryService {
         };
     };
 
-    rpc MembershipsByID(MemberID) returns (Memberships) {
+    rpc MembershipsByID(MemberID) returns (MembershipResponse) {
         option (google.api.http) = {
             get: "/v1/brewery/memberships/{MemberID}",
         };
@@ -149,12 +149,13 @@ message MembershipType {
     int32 UnitBase = 4;
 }
 
-message MembershipTypeRequest {
+message MembershipLevelRequest {
     Action Action = 1;
     MembershipType Parameters = 2;
+    string Name = 3;
 }
 
-message MembershipTypeResponse {
+message MembershipLevelResponse {
     Status Status = 1;
     repeated MembershipType Types = 2;
 }
@@ -163,7 +164,7 @@ message MembershipLevel {
     string Name = 1;
     string UnitType = 2;
     double Units = 3;
-    double Base = 4;
+    int32 Base = 4;
 }
 
 message MembershipID {
@@ -175,9 +176,8 @@ message Membership {
     string Type = 2;
     string StartDate = 3;
     double TotalRawUnits = 4;
-    int32 UnitBase = 5;
-    bool Active = 6;
-    repeated Transaction Transactions = 7;
+    bool Active = 5;
+    repeated Transaction Transactions = 6;
 }
 
 message Memberships {
@@ -192,7 +192,7 @@ message MembershipRequest {
 
 message MembershipResponse {
     Status Status = 1;
-    Membership Membership = 2;
+    repeated Membership Memberships = 2;
 }
 
 message Transaction {
