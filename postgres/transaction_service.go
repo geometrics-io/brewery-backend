@@ -93,7 +93,7 @@ func (ts *TransactionService) Transactions(id int) ([]brewery.Transaction, error
 	return transactions, nil
 }
 
-// TransactionBytes returns teh transactions of the membership connected to the given id and returns the transaction data as a slice of byte
+// TransactionsBytes returns teh transactions of the membership connected to the given id and returns the transaction data as a slice of byte
 func (ts *TransactionService) TransactionsBytes(id int) ([]byte, error) {
 	var tt []byte
 	err := ts.client.Open()

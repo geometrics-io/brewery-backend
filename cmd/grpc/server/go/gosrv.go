@@ -86,6 +86,28 @@ func (s *server) AutoCompleteRequest(ctx context.Context, empty *pb.Empty) (*pb.
 	return &pbac, nil
 }
 
+func (s *server) Recents(ctx context.Context, empty *pb.Empty) (*pb.AutoCompleteData, error) {
+	var pbr pb.AutoCompleteData
+	db := pg.NewClient()
+	err := db.Open()
+	if err != nil {
+		log.Fatalf("failed to open the db connection: %v", err)
+	}
+	acdata, err := db.Recent()
+	if err != nil {
+		log.Fatalf("Failed to grab recent data from postgres: %v", err)
+	}
+
+	for _, d := range acdata {
+		var r pb.AutoComplete
+		r.Membernumber = int32(d.MemberNumber)
+		r.MembershipID = int32(d.MembershipID)
+		r.AutoComplete = d.Value
+		pbr.Data = append(pbr.Data, &r)
+	}
+	return &pbr, nil
+}
+
 func (s *server) MemberService(ctx context.Context, m *pb.MemberRequest) (*pb.MemberResponse, error) {
 	var mr pb.MemberResponse
 	fmt.Println(m.Action)

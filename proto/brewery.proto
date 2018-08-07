@@ -11,6 +11,13 @@ service BreweryService {
         };
     };
 
+    rpc Recents(Empty) returns (AutoCompleteData) {
+        option (google.api.http) = {
+            get: "/v1/brewery/recent",
+        };
+    };
+
+
     rpc MemberService(MemberRequest) returns (MemberResponse) {
         option (google.api.http) = {
             post: "/v1/brewery/service/member",
@@ -74,6 +81,7 @@ service BreweryService {
             body: "*",
         };
     };
+
 }
 
 enum Action {
